@@ -2,20 +2,20 @@
 {
     public abstract class GameObject
     {
-        protected GameObject(Graphics g)
+        protected GameObject(GameController controller)
         {
-            G = g;
+            Controller = controller;
         }
 
-        public GameObject(Graphics g, Image img, int x, int y, int width, int height) : this(g, img, new Rectangle(x, y, width, height)) { }
+        public GameObject(GameController controller, Image img, int x, int y, int width, int height) : this(controller, img, new Rectangle(x, y, width, height)) { }
 
-        public GameObject(Graphics g, Image img, Rectangle rectangle) : this(g)
+        public GameObject(GameController controller, Image img, Rectangle rectangle) : this(controller)
         {
             Img = img;
             Rect = rectangle;
         }
 
-        protected Graphics G { get; }
+        protected GameController Controller { get; }
 
         public virtual Image Img { get; protected set; }
 
@@ -28,7 +28,7 @@
 
         public virtual void Render()
         {
-            G.DrawImage(Img, Rect);
+            Controller.G.DrawImage(Img, Rect);
         }
     }
 }

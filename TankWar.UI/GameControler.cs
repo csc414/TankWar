@@ -1,40 +1,56 @@
 ﻿using System;
 using System.ComponentModel;
+using System.Diagnostics;
+using System.Media;
 using System.Numerics;
 using TankWar.UI.Items;
 
 namespace TankWar.UI
 {
-    public class GameControler
+    public class GameController
     {
-        private readonly Bitmap _canvas;
-
-        private readonly Graphics _g;
-
-        private Tank _player;
-
-        private HashSet<Keys> _playerKeys = new HashSet<Keys>();
-
-        private readonly List<GameObject> _walls = new List<GameObject>();
+        private readonly HashSet<Keys> _playerKeys = new HashSet<Keys>();
 
         private readonly List<Point> _bornPoints = new List<Point>
         {
-            new Point(0 * 15, 0 * 15),
-            new Point(19 * 15, 0 * 15),
-            new Point(38 * 15, 0 * 15)
+            new Point(0 * 15, 0),
+            new Point(19 * 15, 0),
+            new Point(38 * 15, 0)
         };
 
-        private readonly Random _random = new Random(Guid.NewGuid().GetHashCode());
-
-        private readonly List<Tank> _enemies = new List<Tank>();
-
-        public GameControler(int width, int height)
+        public GameController(int width, int height)
         {
-            _canvas = new Bitmap(width, height);
-            _g = Graphics.FromImage(_canvas);
+            Canvas = new Bitmap(width, height);
+            G = Graphics.FromImage(Canvas);
         }
 
-        public Bitmap Canvas => _canvas;
+        public int Width => Canvas.Width;
+
+        public int Height => Canvas.Height;
+
+        public Random Rd { get; } = new Random(Guid.NewGuid().GetHashCode());
+
+        public Bitmap Canvas { get; }
+
+        public Graphics G { get; }
+
+        public HashSet<GameObject> Walls { get; private set; } = new HashSet<GameObject>();
+
+        public HashSet<Tank> Enemies { get; private set; } = new HashSet<Tank>();
+
+        public HashSet<Bullet> Bullets { get; private set; } = new HashSet<Bullet>();
+
+        public HashSet<Effect> Effects { get; private set; } = new HashSet<Effect>();
+
+        public Tank Player { get; private set; }
+
+
+        public void Initialize()
+        {
+            CreateMap();
+            CreateTanks();
+            Music.Start.Play();
+        }
 
         public void CreateMap()
         {
@@ -49,13 +65,13 @@ namespace TankWar.UI
                     switch (line[j])
                     {
                         case '1':
-                            _walls.Add(new Wall(_g, x, y));
+                            Walls.Add(new Wall(this, x, y));
                             break;
                         case '2':
-                            _walls.Add(new Steel(_g, x, y));
+                            Walls.Add(new Steel(this, x, y));
                             break;
                         case '3':
-                            _walls.Add(new Boss(_g, x, y));
+                            Walls.Add(new Boss(this, x, y));
                             break;
                     }
                 }
@@ -64,152 +80,104 @@ namespace TankWar.UI
 
         public void CreateTanks()
         {
-            _player = new Tank(_g, Resources.MyTankUp, Resources.MyTankDown, Resources.MyTankLeft, Resources.MyTankRight, TankDirection.Up, 2, 16 * 15, 38 * 15);
-            _player.OnMoveCheck += OnMoveCheck;
-
-            for (int i = 0; i < 50; i++)
-                CreateEnemy();
+            Player = new PlayerTank(this, 1, Resources.MyTankUp, Resources.MyTankDown, Resources.MyTankLeft, Resources.MyTankRight, MoveDirection.Up, 2, 16 * 15, 38 * 15);
+            for (int i = 0; i < 20; i++)
+                CreateStar();
         }
 
-        public void CreateEnemy()
+        public void CreateStar()
         {
-            var point = _bornPoints[_random.Next(0, _bornPoints.Count)];
-            var tankType = _random.Next(0, 4);
+            var point = _bornPoints[Rd.Next(0, _bornPoints.Count)];
+            Effects.Add(new Star(this, point));
+        }
+
+        public void CreateEnemy(Point point)
+        {
+            var tankType = Rd.Next(0, 4);
             Tank tank;
             switch (tankType)
             {
                 case 0:
-                    tank = new Tank(_g, Resources.GrayUp, Resources.GrayDown, Resources.GrayLeft, Resources.GrayRight, TankDirection.Down, 2, point.X, point.Y);
+                    tank = new EnemyTank(this, 2, Resources.GrayUp, Resources.GrayDown, Resources.GrayLeft, Resources.GrayRight, MoveDirection.Down, 2, point.X, point.Y);
                     break;
                 case 1:
-                    tank = new Tank(_g, Resources.GreenUp, Resources.GreenDown, Resources.GreenLeft, Resources.GreenRight, TankDirection.Down, 2, point.X, point.Y);
+                    tank = new EnemyTank(this, 4, Resources.GreenUp, Resources.GreenDown, Resources.GreenLeft, Resources.GreenRight, MoveDirection.Down, 2, point.X, point.Y);
                     break;
                 case 2:
-                    tank = new Tank(_g, Resources.QuickUp, Resources.QuickDown, Resources.QuickLeft, Resources.QuickRight, TankDirection.Down, 3, point.X, point.Y);
+                    tank = new EnemyTank(this, 1, Resources.QuickUp, Resources.QuickDown, Resources.QuickLeft, Resources.QuickRight, MoveDirection.Down, 3, point.X, point.Y);
                     break;
                 case 3:
-                    tank = new Tank(_g, Resources.SlowUp, Resources.SlowDown, Resources.SlowLeft, Resources.SlowRight, TankDirection.Down, 1, point.X, point.Y);
+                    tank = new EnemyTank(this, 1, Resources.SlowUp, Resources.SlowDown, Resources.SlowLeft, Resources.SlowRight, MoveDirection.Down, 1, point.X, point.Y);
                     break;
                 default:
                     throw new Exception("overflow");
             }
-            tank.Moving = true;
-            tank.OnMoveCheck += OnEnemyMoveCheck;
-            _enemies.Add(tank);
+            Enemies.Add(tank);
         }
 
-        private int OnEnemyMoveCheck(Tank tank, TankDirection direction)
+        public bool IsCollideWall(ref Rectangle rect, out GameObject wall)
         {
-            var i = OnMoveCheck(tank, direction);
-            if (i == -1)
+            foreach (var item in Walls)
             {
-                TankDirection randomDirection;
-                do
-                {
-                    randomDirection = (TankDirection)_random.Next(1, 5);
-                }
-                while (randomDirection == direction);
-                tank.SetDirection(randomDirection);
-            }
-            return i;
-        }
-
-        private int OnMoveCheck(Tank tank, TankDirection direction)
-        {
-            var rect = tank.GetRectangle();
-            var speed = tank.Speed;
-            switch (direction)
-            {
-                case TankDirection.Up:
-                    {
-                        rect.Y -= speed;
-                        if (IsCollide(ref rect, tank) || rect.Y <= 0)
-                            return -1;
-
-                        return rect.Y;
-                    }
-                case TankDirection.Down:
-                    {
-                        rect.Y += speed;
-                        if (IsCollide(ref rect, tank) || rect.Y + tank.Img.Height >= _canvas.Height)
-                            return -1;
-
-                        return rect.Y;
-                    }
-                case TankDirection.Left:
-                    {
-                        rect.X -= speed;
-                        if (IsCollide(ref rect, tank) || rect.X <= 0)
-                            return -1;
-
-                        return rect.X;
-                    }
-                case TankDirection.Right:
-                    {
-                        rect.X += speed;
-                        if (IsCollide(ref rect, tank) || rect.X + tank.Img.Width >= _canvas.Width)
-                            return -1;
-
-                        return rect.X;
-                    }
-            }
-
-            return 0;
-        }
-
-        bool IsCollide(ref Rectangle rect, GameObject except)
-        {
-            foreach (var wall in _walls)
-            {
-                ref var wallRect = ref wall.GetRectangle();
+                ref var wallRect = ref item.GetRectangle();
                 if (rect.IntersectsWith(wallRect))
+                {
+                    wall = item;
                     return true;
-            }
-
-            if(except == _player)
-            {
-                foreach (var enemy in _enemies)
-                {
-                    if (except == enemy)
-                        continue;
-
-                    ref var enemyRect = ref enemy.GetRectangle();
-                    if (rect.IntersectsWith(enemyRect))
-                        return true;
                 }
             }
-            else
+
+            wall = null;
+            return false;
+        }
+
+        public bool IsCollideEnemy(ref Rectangle rect, out Tank tank)
+        {
+            foreach (var enemy in Enemies)
             {
-                if (except != _player)
+                ref var enemyRect = ref enemy.GetRectangle();
+                if (rect.IntersectsWith(enemyRect))
                 {
-                    ref var playerRect = ref _player.GetRectangle();
-                    if (rect.IntersectsWith(playerRect))
-                        return true;
+                    tank = enemy;
+                    return true;
                 }
             }
+
+            tank = null;
+            return false;
+        }
+
+        public bool IsCollidePlayer(ref Rectangle rect)
+        {
+            ref var playerRect = ref Player.GetRectangle();
+            if (rect.IntersectsWith(playerRect))
+                return true;
 
             return false;
         }
 
-        public void Initialize()
-        {
-            CreateMap();
-            CreateTanks();
-        }
-
         public void Render()
         {
-            _g.Clear(Color.Black);
+            G.Clear(Color.Black);
+
             //砖头墙 渲染
-            for (int i = 0; i < _walls.Count; i++)
-                _walls[i].Render();
+            foreach (var wall in Walls)
+                wall.Render();
 
             //敌人 渲染
-            for (int i = 0; i < _enemies.Count; i++)
-                _enemies[i].Render();
+            foreach (var enemy in Enemies)
+                enemy.Render();
 
             //玩家 渲染
-            _player.Render();
+            Player.Render();
+
+            //子弹 渲染
+            foreach (var bullet in Bullets)
+                bullet.Render();
+
+            //效果 渲染
+            foreach (var effect in Effects)
+                effect.Render();
         }
 
         void Move(Tank tank, Keys key)
@@ -217,16 +185,16 @@ namespace TankWar.UI
             switch (key)
             {
                 case Keys.W:
-                    tank.SetDirection(TankDirection.Up);
+                    tank.SetDirection(MoveDirection.Up);
                     break;
                 case Keys.S:
-                    tank.SetDirection(TankDirection.Down);
+                    tank.SetDirection(MoveDirection.Down);
                     break;
                 case Keys.A:
-                    tank.SetDirection(TankDirection.Left);
+                    tank.SetDirection(MoveDirection.Left);
                     break;
                 case Keys.D:
-                    tank.SetDirection(TankDirection.Right);
+                    tank.SetDirection(MoveDirection.Right);
                     break;
             }
 
@@ -235,29 +203,39 @@ namespace TankWar.UI
 
         public void KeyDown(KeyEventArgs e)
         {
+            if (Player == null)
+                return;
+
             switch (e.KeyCode)
             {
                 case Keys.W:
                     _playerKeys.Add(Keys.W);
-                    Move(_player, e.KeyCode);
+                    Move(Player, e.KeyCode);
                     break;
                 case Keys.S:
                     _playerKeys.Add(Keys.S);
-                    Move(_player, e.KeyCode);
+                    Move(Player, e.KeyCode);
                     break;
                 case Keys.A:
                     _playerKeys.Add(Keys.A);
-                    Move(_player, e.KeyCode);
+                    Move(Player, e.KeyCode);
                     break;
                 case Keys.D:
                     _playerKeys.Add(Keys.D);
-                    Move(_player, e.KeyCode);
+                    Move(Player, e.KeyCode);
+                    break;
+                case Keys.J:
+                    Debug.Print("Hello");
+                    Player.StartShooting();
                     break;
             }
         }
 
         public void KeyUp(KeyEventArgs e)
         {
+            if (Player == null)
+                return;
+
             switch (e.KeyCode)
             {
                 case Keys.W:
@@ -272,12 +250,15 @@ namespace TankWar.UI
                 case Keys.D:
                     _playerKeys.Remove(Keys.D);
                     break;
+                case Keys.J:
+                    Player.EndShooting();
+                    break;
             }
 
             if (_playerKeys.Count > 0)
-                Move(_player, _playerKeys.Last());
+                Move(Player, _playerKeys.Last());
             else
-                _player.Moving = false;
+                Player.Moving = false;
         }
     }
 }

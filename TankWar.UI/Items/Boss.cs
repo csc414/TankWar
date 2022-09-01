@@ -2,7 +2,7 @@
 {
     public class Boss : GameObject
     {
-        public Boss(Graphics g, int x, int y) : base(g, Resources.Boss, x, y, 30, 30)
+        public Boss(GameController controller, int x, int y) : base(controller, Resources.Boss, x, y, 30, 30)
         {
         }
     }

@@ -5,7 +5,7 @@
     /// </summary>
     public class Steel : GameObject
     {
-        public Steel(Graphics g, int x, int y) : base(g, Resources.steel, x, y, 15, 15)
+        public Steel(GameController controller, int x, int y) : base(controller, Resources.steel, x, y, 15, 15)
         {
         }
     }

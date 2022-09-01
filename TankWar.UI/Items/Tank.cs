@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Microsoft.VisualBasic.Devices;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
@@ -8,20 +9,11 @@ using System.Threading.Tasks;
 
 namespace TankWar.UI.Items
 {
-    public enum TankDirection
+    public class Tank : MoveObject
     {
-        Unknow,
-        Up,
-        Down,
-        Left,
-        Right
-    }
-
-    public class Tank : GameObject
-    {
-        public Tank(Graphics g, Bitmap upImg, Bitmap downImg, Bitmap leftImg, Bitmap rightImg, TankDirection direction, int speed, int x, int y) : base(g, null, new Rectangle(x, y, 0, 0))
+        public Tank(GameController controller, int hp, Bitmap upImg, Bitmap downImg, Bitmap leftImg, Bitmap rightImg, MoveDirection direction, int speed, int x, int y) : base(controller, null, new Rectangle(x, y, 0, 0))
         {
-            Speed = speed;
+            Hp = hp;
             upImg.MakeTransparent(Color.White);
             downImg.MakeTransparent(Color.White);
             leftImg.MakeTransparent(Color.White);
@@ -31,7 +23,12 @@ namespace TankWar.UI.Items
             LeftImg = leftImg;
             RightImg = rightImg;
             SetDirection(direction);
+            Speed = speed;
         }
+
+        public int Hp { get; set; }
+
+        public bool Shooting { get; private set; }
 
         private Bitmap UpImg { get; }
 
@@ -41,50 +38,104 @@ namespace TankWar.UI.Items
 
         private Bitmap RightImg { get; }
 
-        public TankDirection Direction { get; protected set; }
+        private int _shootCount = 0;
 
-        public void SetDirection(TankDirection direction)
+        public virtual bool IsCollide(ref Rectangle rect)
+        {
+            return Controller.IsCollideWall(ref rect, out _);
+        }
+
+        public override int OnMoveCheck(MoveDirection direction)
+        {
+            var rect = Rect;
+            switch (direction)
+            {
+                case MoveDirection.Up:
+                    {
+                        rect.Y -= Speed;
+                        if (IsCollide(ref rect) || rect.Y <= 0)
+                            return Rect.Y;
+
+                        return rect.Y;
+                    }
+                case MoveDirection.Down:
+                    {
+                        rect.Y += Speed;
+                        if (IsCollide(ref rect) || rect.Y + Img.Height >= Controller.Height)
+                            return Rect.Y;
+
+                        return rect.Y;
+                    }
+                case MoveDirection.Left:
+                    {
+                        rect.X -= Speed;
+                        if (IsCollide(ref rect) || rect.X <= 0)
+                            return Rect.X;
+
+                        return rect.X;
+                    }
+                case MoveDirection.Right:
+                    {
+                        rect.X += Speed;
+                        if (IsCollide(ref rect) || rect.X + Img.Width >= Controller.Width)
+                            return Rect.X;
+
+                        return rect.X;
+                    }
+                default:
+                    throw new Exception("Unknown type of Direction");
+            }
+        }
+
+        public void SetDirection(MoveDirection direction)
         {
             if (Direction != direction)
             {
                 Direction = direction;
                 Img = Direction switch
                 {
-                    TankDirection.Up => UpImg,
-                    TankDirection.Down => DownImg,
-                    TankDirection.Left => LeftImg,
-                    TankDirection.Right => RightImg,
-                    _ => throw new ArgumentException("Unknown type of Direction", nameof(Direction)),
+                    MoveDirection.Up => UpImg,
+                    MoveDirection.Down => DownImg,
+                    MoveDirection.Left => LeftImg,
+                    MoveDirection.Right => RightImg,
+                    _ => throw new Exception("Unknown type of Direction"),
                 };
                 Rect.Width = Img.Width;
                 Rect.Height = Img.Height;
             }
         }
 
-        public int Speed { get; set; }
+        public void Shoot()
+        {
+            var bullet = new Bullet(Controller, this, Direction, Rect);
+            Controller.Bullets.Add(bullet);
+            Music.Fire.Play();
+        }
 
-        public bool Moving { get; set; }
+        public void StartShooting()
+        {
+            if (!Shooting)
+            {
+                _shootCount = 0;
+                Shooting = true;
+            }
+        }
 
-        public event Func<Tank, TankDirection, int> OnMoveCheck;
+        public void EndShooting()
+        {
+            if (Shooting)
+                Shooting = false;
+        }
 
         public override void Render()
         {
-            if (Moving)
+            if (Shooting)
             {
-                switch (Direction)
+                _shootCount--;
+                if (_shootCount <= 0)
                 {
-                    case TankDirection.Up:
-                    case TankDirection.Down:
-                        var y = OnMoveCheck(this, Direction);
-                        if (y > 0)
-                            Rect.Y = y;
-                        break;
-                    case TankDirection.Left:
-                    case TankDirection.Right:
-                        var x = OnMoveCheck(this, Direction);
-                        if (x > 0)
-                            Rect.X = x;
-                        break;
+                    Shoot();
+                    _shootCount = 10;
                 }
             }
 

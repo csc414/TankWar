@@ -5,7 +5,7 @@
     /// </summary>
     public class Wall : GameObject
     {
-        public Wall(Graphics g, int x, int y) : base(g, Resources.wall, x, y, 15, 15)
+        public Wall(GameController controller, int x, int y) : base(controller, Resources.wall, x, y, 15, 15)
         {
         }
     }

@@ -15,12 +15,12 @@ namespace TankWar.UI
 
         public void Render(object state)
         {
-            var controller = new GameControler(ClientRectangle.Width, ClientRectangle.Height);
+            var controller = new GameController(ClientRectangle.Width, ClientRectangle.Height);
             KeyDown += (sender, arg) => controller.KeyDown(arg);
             KeyUp += (sender, arg) => controller.KeyUp(arg);
             controller.Initialize();
 
-            var g = (Graphics)state!;
+            var g = (Graphics)state;
             var delay = 1000 / 60;
             while(!_tokenSource.IsCancellationRequested)
             {
