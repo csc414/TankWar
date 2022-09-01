@@ -47,6 +47,10 @@ namespace TankWar.UI
 
         public void Initialize()
         {
+            Walls.Clear();
+            Enemies.Clear();
+            Bullets.Clear();
+            Effects.Clear();
             CreateMap();
             CreateTanks();
             Music.Start.Play();
@@ -80,7 +84,7 @@ namespace TankWar.UI
 
         public void CreateTanks()
         {
-            Player = new PlayerTank(this, 1, Resources.MyTankUp, Resources.MyTankDown, Resources.MyTankLeft, Resources.MyTankRight, MoveDirection.Up, 2, 16 * 15, 38 * 15);
+            Player = new PlayerTank(this, 3, Resources.MyTankUp, Resources.MyTankDown, Resources.MyTankLeft, Resources.MyTankRight, MoveDirection.Up, 3, 16 * 15, 38 * 15);
             for (int i = 0; i < 20; i++)
                 CreateStar();
         }

@@ -115,10 +115,7 @@ namespace TankWar.UI.Items
         public void StartShooting()
         {
             if (!Shooting)
-            {
-                _shootCount = 0;
                 Shooting = true;
-            }
         }
 
         public void EndShooting()
@@ -129,9 +126,9 @@ namespace TankWar.UI.Items
 
         public override void Render()
         {
+            _shootCount--;
             if (Shooting)
             {
-                _shootCount--;
                 if (_shootCount <= 0)
                 {
                     Shoot();

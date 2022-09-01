@@ -24,16 +24,30 @@ namespace TankWar.UI.Items
         {
             var i = base.OnMoveCheck(direction);
             if (i == GetCoordinate(direction))
-            {
-                MoveDirection randomDirection;
-                do
-                {
-                    randomDirection = (MoveDirection)Controller.Rd.Next(1, 5);
-                }
-                while (randomDirection == direction);
-                SetDirection(randomDirection);
-            }
+                RandomDirection();
             return i;
+        }
+
+        public void RandomDirection()
+        {
+            MoveDirection randomDirection;
+            do
+            {
+                randomDirection = (MoveDirection)Controller.Rd.Next(1, 5);
+            }
+            while (randomDirection == Direction);
+            SetDirection(randomDirection);
+        }
+
+        public override void Render()
+        {
+            if(Controller.Rd.Next(0, 40) == 20)
+                Shoot();
+
+            if (Controller.Rd.Next(0, 100) == 50)
+                RandomDirection();
+
+            base.Render();
         }
     }
 }

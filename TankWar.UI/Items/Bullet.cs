@@ -47,20 +47,46 @@ namespace TankWar.UI.Items
 
         public override void Render()
         {
-            if (Controller.IsCollideWall(ref Rect, out var wall))
+            if (Rect.X < -Rect.Width || Rect.Y < -Rect.Height || Rect.X > Controller.Width + Rect.Width || Rect.Y > Controller.Height + Rect.Height)
+            {
+                Controller.Bullets.Remove(this);
+            }
+            else if (Controller.IsCollideWall(ref Rect, out var wall))
             {
                 if (wall is Wall)
                     Controller.Walls.Remove(wall);
 
                 Controller.Bullets.Remove(this);
             }
-            else if (Controller.IsCollideEnemy(ref Rect, out var tank))
+            else if (Shooter is PlayerTank)
             {
-                tank.Hp--;
-                if (tank.Hp == 0)
+                if (Controller.IsCollideEnemy(ref Rect, out var tank))
                 {
-                    Controller.Effects.Add(new Blast(Controller, tank.GetRectangle()));
-                    Controller.Enemies.Remove(tank);
+                    tank.Hp--;
+                    if (tank.Hp == 0)
+                    {
+                        Controller.Effects.Add(new Blast(Controller, tank.GetRectangle()));
+                        Controller.Enemies.Remove(tank);
+                        if(Controller.Enemies.Count == 0)
+                        {
+                            MessageBox.Show("你赢了~");
+                            Controller.Initialize();
+                            return;
+                        }
+                    }
+                    else
+                        Music.Hit.Play();
+                    Controller.Bullets.Remove(this);
+                }
+            }
+            else if(Controller.IsCollidePlayer(ref Rect))
+            {
+                Controller.Player.Hp--;
+                if (Controller.Player.Hp == 0)
+                {
+                    MessageBox.Show("完蛋了~");
+                    Controller.Initialize();
+                    return;
                 }
                 else
                     Music.Hit.Play();
