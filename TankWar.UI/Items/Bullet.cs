@@ -8,7 +8,7 @@ namespace TankWar.UI.Items
 {
     public class Bullet : MoveObject
     {
-        public Bullet(GameController controller, GameObject shooter, MoveDirection direction, Rectangle rect, int speed = 5) : base(controller)
+        public Bullet(GameController controller, GameObject shooter, MoveDirection direction, Rectangle rect, int speed = 6) : base(controller)
         {
             switch (direction)
             {
@@ -89,7 +89,10 @@ namespace TankWar.UI.Items
                     return;
                 }
                 else
+                {
+                    Controller.Effects.Add(new Blast(Controller, Controller.Player.GetRectangle()));
                     Music.Hit.Play();
+                }
                 Controller.Bullets.Remove(this);
             }
 

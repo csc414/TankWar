@@ -84,8 +84,8 @@ namespace TankWar.UI
 
         public void CreateTanks()
         {
-            Player = new PlayerTank(this, 3, Resources.MyTankUp, Resources.MyTankDown, Resources.MyTankLeft, Resources.MyTankRight, MoveDirection.Up, 3, 16 * 15, 38 * 15);
-            for (int i = 0; i < 20; i++)
+            Player = new PlayerTank(this, 5, Resources.MyTankUp, Resources.MyTankDown, Resources.MyTankLeft, Resources.MyTankRight, MoveDirection.Up, 4, 16 * 15, 38 * 15);
+            for (int i = 0; i < 100; i++)
                 CreateStar();
         }
 
@@ -182,6 +182,8 @@ namespace TankWar.UI
             //效果 渲染
             foreach (var effect in Effects)
                 effect.Render();
+
+            G.DrawString($"HP:{Player?.Hp ?? 0}", new Font("宋体", 20, FontStyle.Bold), new SolidBrush(Color.Red), new PointF(5, 5));
         }
 
         void Move(Tank tank, Keys key)

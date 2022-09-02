@@ -132,7 +132,7 @@ namespace TankWar.UI.Items
                 if (_shootCount <= 0)
                 {
                     Shoot();
-                    _shootCount = 10;
+                    _shootCount = 5;
                 }
             }
 

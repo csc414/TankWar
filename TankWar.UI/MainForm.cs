@@ -1,3 +1,5 @@
+using System.Runtime.InteropServices;
+
 namespace TankWar.UI
 {
     public partial class MainForm : Form
@@ -22,13 +24,13 @@ namespace TankWar.UI
 
             var g = (Graphics)state;
             var delay = 1000 / 60;
-            while(!_tokenSource.IsCancellationRequested)
+            while (!_tokenSource.IsCancellationRequested)
             {
                 var start = DateTimeOffset.Now;
                 controller.Render();
-                g.DrawImage(controller.Canvas, 0, 0);
+                g.DrawImage(controller.Canvas, 0, 0, ClientRectangle.Width, ClientRectangle.Height);
                 var d = delay - (int)(DateTimeOffset.Now - start).TotalMilliseconds;
-                if(d > 0)
+                if (d > 0)
                     Thread.Sleep(d);
             }
         }
@@ -36,6 +38,18 @@ namespace TankWar.UI
         private void MainForm_FormClosed(object sender, FormClosedEventArgs e)
         {
             _tokenSource.Cancel();
+        }
+
+        private void MainForm_ResizeEnd(object sender, EventArgs e)
+        {
+            if (ClientRectangle.Width != ClientRectangle.Height)
+            {
+                var max = Math.Max(ClientRectangle.Width, ClientRectangle.Height);
+                if (max > 600)
+                    max = 600;
+                Width = max + (Width - ClientRectangle.Width);
+                Height = max + (Height - ClientRectangle.Height);
+            }
         }
     }
 }

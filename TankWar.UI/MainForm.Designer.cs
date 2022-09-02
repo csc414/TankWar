@@ -41,6 +41,7 @@
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
             this.Text = "TankWar";
             this.FormClosed += new System.Windows.Forms.FormClosedEventHandler(this.MainForm_FormClosed);
+            this.ResizeEnd += new System.EventHandler(this.MainForm_ResizeEnd);
             this.ResumeLayout(false);
 
         }
